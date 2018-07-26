@@ -1,8 +1,8 @@
 # # Drag and Drop Directive
 
-module = angular.module "laneolson.ui.dragdrop", []
+angular.module "laneolson.ui.dragdrop", []
 
-module.directive 'dragAndDrop', ['$document', ($document) ->
+.directive 'dragAndDrop', ['$document', ($document) ->
   restrict: 'AE'
   scope:
     onItemPlaced: "&"
@@ -75,6 +75,7 @@ module.directive 'dragAndDrop', ['$document', ($document) ->
       # item is overtop of them
       @checkForIntersection = () ->
         for dropSpot in droppables
+          dropSpot.update()
           if isInside $scope.currentDraggable.midPoint, dropSpot
             if !dropSpot.isActive
               @setCurrentDroppable dropSpot
@@ -205,6 +206,7 @@ module.directive 'dragAndDrop', ['$document', ($document) ->
           draggable.isAssigned = false
           if scope.fixedPositions
             draggable.returnToStartPosition()
+            ngDragAndDrop.fireCallback 'drag-end', e
         if dropSpot
           dropSpot.deactivate()
         ngDragAndDrop.setCurrentDraggable null
@@ -232,7 +234,7 @@ module.directive 'dragAndDrop', ['$document', ($document) ->
 
 # Drag Directive
 # ----------
-module.directive 'dragItem', [
+.directive 'dragItem', [
   '$window', '$document', '$compile',
   ($window, $document, $compile) ->
     restrict: 'EA'
@@ -250,11 +252,13 @@ module.directive 'dragItem', [
     link: (scope, element, attrs, ngDragAndDrop) ->
 
       cloneEl = width = height = startPosition = transformEl = eventOffset =
-      pressEvents = w = null
+      pressEvents = w = firstPress = null
 
 
       # set the position values on the drag item
       updateDimensions = () ->
+        width = element[0].offsetWidth
+        height = element[0].offsetHeight
         scope.left = scope.x + element[0].offsetLeft
         scope.right = scope.left + width
         scope.top = scope.y + element[0].offsetTop
@@ -384,6 +388,9 @@ module.directive 'dragItem', [
       onPress = (e) ->
         unless scope.dragEnabled
           return
+        if !firstPress
+          firstPress = true
+          updateDimensions()
         if e.touches and e.touches.length is 1
           eventOffset = [
             (e.touches[0].clientX-scope.left)
@@ -413,8 +420,6 @@ module.directive 'dragItem', [
 
         # set starting values
         eventOffset = [0, 0]
-        width = element[0].offsetWidth
-        height = element[0].offsetHeight
         scope.dropSpots = []
         scope.isAssigned = false
         scope.x ?= 0
@@ -456,7 +461,7 @@ module.directive 'dragItem', [
 
 # Drop Directive
 # ----------
-module.directive 'dropSpot', [ '$window', ($window) ->
+.directive 'dropSpot', [ '$window', ($window) ->
   restrict: 'AE'
   require: '^dragAndDrop'
   transclude: true
@@ -472,6 +477,9 @@ module.directive 'dropSpot', [ '$window', ($window) ->
       scope.top = element[0].offsetTop
       scope.right = scope.left + element[0].offsetWidth
       scope.bottom = scope.top + element[0].offsetHeight
+
+    scope.update = () ->
+      updateDimensions()
 
     # calculates where the item should be dropped to based on its config
     getDroppedPosition = (item) ->

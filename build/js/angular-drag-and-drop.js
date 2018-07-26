@@ -1,8 +1,4 @@
-var module;
-
-module = angular.module("laneolson.ui.dragdrop", []);
-
-module.directive('dragAndDrop', [
+angular.module("laneolson.ui.dragdrop", []).directive('dragAndDrop', [
   '$document', function($document) {
     return {
       restrict: 'AE',
@@ -75,6 +71,7 @@ module.directive('dragAndDrop', [
             results = [];
             for (i = 0, len = droppables.length; i < len; i++) {
               dropSpot = droppables[i];
+              dropSpot.update();
               if (isInside($scope.currentDraggable.midPoint, dropSpot)) {
                 if (!dropSpot.isActive) {
                   this.setCurrentDroppable(dropSpot);
@@ -201,6 +198,7 @@ module.directive('dragAndDrop', [
               draggable.isAssigned = false;
               if (scope.fixedPositions) {
                 draggable.returnToStartPosition();
+                ngDragAndDrop.fireCallback('drag-end', e);
               }
             }
             if (dropSpot) {
@@ -227,9 +225,7 @@ module.directive('dragAndDrop', [
       }
     };
   }
-]);
-
-module.directive('dragItem', [
+]).directive('dragItem', [
   '$window', '$document', '$compile', function($window, $document, $compile) {
     return {
       restrict: 'EA',
@@ -246,9 +242,11 @@ module.directive('dragItem', [
         lockVertical: "="
       },
       link: function(scope, element, attrs, ngDragAndDrop) {
-        var bindEvents, cloneEl, eventOffset, height, init, onPress, pressEvents, setClonePosition, startPosition, transformEl, unbindEvents, updateDimensions, w, width;
-        cloneEl = width = height = startPosition = transformEl = eventOffset = pressEvents = w = null;
+        var bindEvents, cloneEl, eventOffset, firstPress, height, init, onPress, pressEvents, setClonePosition, startPosition, transformEl, unbindEvents, updateDimensions, w, width;
+        cloneEl = width = height = startPosition = transformEl = eventOffset = pressEvents = w = firstPress = null;
         updateDimensions = function() {
+          width = element[0].offsetWidth;
+          height = element[0].offsetHeight;
           scope.left = scope.x + element[0].offsetLeft;
           scope.right = scope.left + width;
           scope.top = scope.y + element[0].offsetTop;
@@ -351,6 +349,10 @@ module.directive('dragItem', [
           if (!scope.dragEnabled) {
             return;
           }
+          if (!firstPress) {
+            firstPress = true;
+            updateDimensions();
+          }
           if (e.touches && e.touches.length === 1) {
             eventOffset = [e.touches[0].clientX - scope.left, e.touches[0].clientY - scope.top];
           } else {
@@ -381,8 +383,6 @@ module.directive('dragItem', [
             element.addClass(scope.dragId);
           }
           eventOffset = [0, 0];
-          width = element[0].offsetWidth;
-          height = element[0].offsetHeight;
           scope.dropSpots = [];
           scope.isAssigned = false;
           if (scope.x == null) {
@@ -421,9 +421,7 @@ module.directive('dragItem', [
       }
     };
   }
-]);
-
-module.directive('dropSpot', [
+]).directive('dropSpot', [
   '$window', function($window) {
     return {
       restrict: 'AE',
@@ -441,6 +439,9 @@ module.directive('dropSpot', [
           scope.top = element[0].offsetTop;
           scope.right = scope.left + element[0].offsetWidth;
           return scope.bottom = scope.top + element[0].offsetHeight;
+        };
+        scope.update = function() {
+          return updateDimensions();
         };
         getDroppedPosition = function(item) {
           var dropSize, itemSize, xPos, yPos;
