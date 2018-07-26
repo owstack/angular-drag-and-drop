@@ -259,6 +259,8 @@ angular.module "laneolson.ui.dragdrop", []
       updateDimensions = () ->
         width = element[0].offsetWidth
         height = element[0].offsetHeight
+        scope.x = parseFloat(scope.x)
+        scope.y = parseFloat(scope.y)
         scope.left = scope.x + element[0].offsetLeft
         scope.right = scope.left + width
         scope.top = scope.y + element[0].offsetTop
